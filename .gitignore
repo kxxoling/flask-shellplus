@@ -1,0 +1,16 @@
+*.pyc
+*.swp
+*.mo
+*~
+
+.DS_Store
+.idea
+Icon?
+Thumbs.db
+
+_book
+_site
+_build
+*.egg-info/
+build/
+dist/
