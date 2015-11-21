@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 # coding: utf-8
 import os
+import sys
+import logging
 
+import six
 from flask import current_app
 from flask.ext.script import Command, Option
 
@@ -42,9 +45,11 @@ class Shell(Command):
                         help='Tells Flask to use PT-IPython, not IPython.'),
             Option('--ipython', action='store_true', dest='ipython',
                         help='Tells Flask to use IPython, not BPython.'),
+            Option('--notebook', action='store_true', dest='notebook',
+                        help='Tells Flask to use IPython Notebook.'),
+            Option('--no-browser', action='store_true', default=False, dest='no_browser',
+                        help='Don\'t open the notebook in a browser after startup.'),
         # TODOs:
-        #    Option('--notebook', action='store_true', dest='notebook',
-        #                help='Tells Flask to use IPython Notebook.'),
         #    Option('--kernel', action='store_true', dest='kernel',
         #                help='Tells Flask to start an IPython Kernel.'),
         #    Option('--use-pythonrc', action='store_true', dest='use_pythonrc',
@@ -57,8 +62,6 @@ class Shell(Command):
         #                help='Do not display loaded models messages'),
             Option('--vi', action='store_true', default=use_vi_mode(), dest='vi_mode',
                         help='Load Vi key bindings (for --ptpython and --ptipython)'),
-        #    Option('--no-browser', action='store_true', default=False, dest='no_browser',
-        #                help='Don\'t open the notebook in a browser after startup.'),
         )
 
     def setup_sql_printing(self, **options):
@@ -81,7 +84,7 @@ class Shell(Command):
 
         vi_mode = options['vi_mode']
 
-        for key in ('plain', 'bpython', 'ptpython', 'ptipython', 'ipython'):
+        for key in ('notebook', 'plain', 'bpython', 'ptpython', 'ptipython', 'ipython'):
             if options.get(key):
                 shell = key
                 break
@@ -90,7 +93,11 @@ class Shell(Command):
 
         context = self.context
 
-        if shell == 'bpython':
+        if shell == 'notebook':
+            no_browser = options['no_browser']
+            notebook = get_notebook()
+            notebook(no_browser=no_browser, display_name=self.banner)
+        elif shell == 'bpython':
             from bpython import embed
             embed(banner=self.banner, locals_=context)
         elif shell == 'ptpython':
@@ -106,6 +113,36 @@ class Shell(Command):
             # Use basic python shell
             import code
             code.interact(self.banner, local=context)
+
+
+def get_notebook():
+    # import NotebookApp from IPython notebook
+    try:
+        from notebook.notebookapp import NotebookApp
+    except ImportError:
+        try:
+            from IPython.html.notebookapp import NotebookApp
+        except ImportError:
+            from IPython.frontend.html.notebook import notebookapp
+            NotebookApp = notebookapp.NotebookApp
+
+    def run_notebook(no_browser=False, display_name='notebook'):
+        app = NotebookApp.instance()
+
+        ipython_arguments = []      # Will implement to set specific IPython configs
+        notebook_arguments = []     # Will implement to set specific notebook configs
+
+        if no_browser is True:
+            notebook_arguments.append('--no-browser')
+
+        if '--notebook-dir' not in notebook_arguments:
+            notebook_arguments.extend(['--notebook-dir', '.'])
+
+        install_kernel_spec(app, display_name, ipython_arguments)
+
+        app.initialize(notebook_arguments)
+        app.start()
+    return run_notebook
 
 
 def get_available_shell():
@@ -137,3 +174,44 @@ def use_vi_mode():
         return False
     editor = os.path.basename(editor)
     return editor.startswith('vi') or editor.endswith('vim')
+
+
+def install_kernel_spec(app, display_name, ipython_arguments):
+    """install an IPython >= 3.0 kernelspec that loads some extensions"""
+    if app.kernel_spec_manager is None:
+        try:
+            from jupyter_client.kernelspec import KernelSpecManager
+        except ImportError:
+            from IPython.kernel.kernelspec import KernelSpecManager
+        app.kernel_spec_manager = KernelSpecManager()
+    ksm = app.kernel_spec_manager
+
+    try_spec_names = [
+        'python3' if six.PY3 else 'python2',
+        'python',
+    ]
+    if isinstance(try_spec_names, six.string_types):
+        try_spec_names = [try_spec_names]
+
+    for spec_name in try_spec_names:
+        try:
+            ks = ksm.get_kernel_spec(spec_name)
+            break
+        except Exception as e:
+            logging.warn(e)
+            continue
+    else:
+        raise Exception("No notebook (Python) kernel specs found")
+
+    ks.argv.extend(ipython_arguments)
+    ks.display_name = display_name
+
+    manage_py_dir, manage_py = os.path.split(os.path.realpath(sys.argv[0]))
+
+    if manage_py == 'manage.py' and os.path.isdir(manage_py_dir) and manage_py_dir != os.getcwd():
+        pythonpath = ks.env.get('PYTHONPATH', os.environ.get('PYTHONPATH', ''))
+        pythonpath = pythonpath.split(':')
+        if manage_py_dir not in pythonpath:
+            pythonpath.append(manage_py_dir)
+
+        ks.env['PYTHONPATH'] = ':'.join(filter(None, pythonpath))
