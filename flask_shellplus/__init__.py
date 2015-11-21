@@ -47,8 +47,8 @@ class Shell(Command):
         #                help='Tells Flask to start an IPython Kernel.'),
         #    Option('--use-pythonrc', action='store_true', dest='use_pythonrc',
         #                help='Tells Flask to execute PYTHONSTARTUP file (BE CAREFULL WITH THIS!)'),
-        #    Option('--print-sql', action='store_true', default=False,
-        #                help="Print SQL queries as they're executed"),
+            Option('--print-sql', action='store_true', default=False,
+                        help="Print SQL queries as they're executed"),
         #    Option('--dont-load', action='append', dest='dont_load', default=[],
         #                help='Ignore autoloading of some apps/models. Can be used several times.'),
         #    Option('--quiet-load', action='store_true', default=False, dest='quiet_load',
@@ -59,6 +59,14 @@ class Shell(Command):
         #                help='Don\'t open the notebook in a browser after startup.'),
         )
 
+    def setup_sql_printing(self, **options):
+        print_sql = options.get('print_sql')
+        if print_sql is not True:
+            return
+
+        db = self.context['db']
+        db.engine.echo = True   # Used for SQLAlchemy
+
     def run(self, **options):
         """
         Runs the shell.  If no_bpython is False or use_bpython is True, then
@@ -67,6 +75,8 @@ class Shell(Command):
 
         :param options: defined in ``self.get_options``.
         """
+        self.setup_sql_printing(**options)
+
         for key in ('plain', 'bpython', 'ptpython', 'ptipython', 'ipython'):
             if options.get(key):
                 shell = key

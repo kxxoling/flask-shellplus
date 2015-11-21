@@ -5,6 +5,8 @@ from flask.ext.shellplus import Shell
 
 
 app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
+app.config['SQLALCHEMY_ECHO'] = False
 db = SQLAlchemy(app)
 manager = Manager(app)
 
@@ -13,6 +15,11 @@ def make_context():
     return dict(app=app, db=db)
 
 manager.add_command('shell', Shell(make_context=make_context))
+
+
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True)
 
 
 if __name__ == '__main__':
