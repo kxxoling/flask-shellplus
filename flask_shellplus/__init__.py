@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
+import os
+
 from flask import current_app
 from flask.ext.script import Command, Option
 
@@ -53,8 +55,8 @@ class Shell(Command):
         #                help='Ignore autoloading of some apps/models. Can be used several times.'),
         #    Option('--quiet-load', action='store_true', default=False, dest='quiet_load',
         #                help='Do not display loaded models messages'),
-        #    Option('--vi', action='store_true', default=use_vi_mode(), dest='vi_mode',
-        #                help='Load Vi key bindings (for --ptpython and --ptipython)'),
+            Option('--vi', action='store_true', default=use_vi_mode(), dest='vi_mode',
+                        help='Load Vi key bindings (for --ptpython and --ptipython)'),
         #    Option('--no-browser', action='store_true', default=False, dest='no_browser',
         #                help='Don\'t open the notebook in a browser after startup.'),
         )
@@ -77,6 +79,8 @@ class Shell(Command):
         """
         self.setup_sql_printing(**options)
 
+        vi_mode = options['vi_mode']
+
         for key in ('plain', 'bpython', 'ptpython', 'ptipython', 'ipython'):
             if options.get(key):
                 shell = key
@@ -91,10 +95,10 @@ class Shell(Command):
             embed(banner=self.banner, locals_=context)
         elif shell == 'ptpython':
             from ptpython.repl import embed
-            embed(banner=self.banner, user_ns=context)
+            embed(banner=self.banner, user_ns=context, vi_mode=vi_mode)
         elif shell == 'ptipython':
             from ptpython.ipython import embed
-            embed(user_ns=context)
+            embed(user_ns=context, vi_mode=vi_mode)
         elif shell == 'ipython':
             from IPython import embed
             embed(user_ns=context)
@@ -125,3 +129,11 @@ def get_available_shell():
         except ImportError:
             continue
     return shell
+
+
+def use_vi_mode():
+    editor = os.environ.get('EDITOR')
+    if not editor:
+        return False
+    editor = os.path.basename(editor)
+    return editor.startswith('vi') or editor.endswith('vim')
