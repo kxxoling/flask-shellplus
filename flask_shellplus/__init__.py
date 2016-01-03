@@ -3,10 +3,13 @@
 import os
 import sys
 import logging
+from collections import OrderedDict
 
 import six
 from flask import current_app
 from flask.ext.script import Command, Option
+
+from .utils import import_items
 
 
 __version__ = '0.0.1'
@@ -56,10 +59,10 @@ class Shell(Command):
         #                help='Tells Flask to execute PYTHONSTARTUP file (BE CAREFULL WITH THIS!)'),
             Option('--print-sql', action='store_true', default=False,
                         help="Print SQL queries as they're executed"),
-        #    Option('--dont-load', action='append', dest='dont_load', default=[],
-        #                help='Ignore autoloading of some apps/models. Can be used several times.'),
-        #    Option('--quiet-load', action='store_true', default=False, dest='quiet_load',
-        #                help='Do not display loaded models messages'),
+            Option('--dont-load', action='append', dest='dont_load', default=[],
+                        help='Ignore autoloading of some apps/models. Can be used several times.'),
+            Option('--quiet-load', action='store_true', default=False, dest='quiet_load',
+                        help='Do not display loaded models messages'),
             Option('--vi', action='store_true', default=use_vi_mode(), dest='vi_mode',
                         help='Load Vi key bindings (for --ptpython and --ptipython)'),
         )
@@ -71,6 +74,21 @@ class Shell(Command):
 
         db = self.context['db']
         db.engine.echo = True   # Used for SQLAlchemy
+
+    def setup_imports(self, **options):
+        app = self.context['app']
+        quiet_load = options.get('quiet_load')
+        dont_load = options.get('dont_load')
+        model_aliases = app.config.get('SHELLPLUS_MODEL_ALIASES', {})
+        basic_imports = {}
+        pre_imports = app.config.get('SHELLPLUS_PRE_IMPORTS', {})
+        post_imports = app.config.get('SHELLPLUS_POST_IMPORTS', {})
+
+        import_directives = OrderedDict(pre_imports)
+        import_directives.update(basic_imports)
+        import_directives.update(post_imports)
+        imported_objects = import_items(import_directives, quiet_load=quiet_load)
+        self.context.update(imported_objects)
 
     def run(self, **options):
         """
@@ -91,6 +109,7 @@ class Shell(Command):
         else:
             shell = get_available_shell()
 
+        self.setup_imports(**options)
         context = self.context
 
         if shell == 'notebook':

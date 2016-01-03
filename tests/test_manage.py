@@ -7,6 +7,7 @@ from flask.ext.shellplus import Shell
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
 app.config['SQLALCHEMY_ECHO'] = False
+app.config['SHELLPLUS_PRE_IMPORTS'] = [('os', 'path')]
 db = SQLAlchemy(app)
 manager = Manager(app)
 
