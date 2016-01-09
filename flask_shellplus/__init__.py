@@ -55,8 +55,8 @@ class Shell(Command):
         # TODOs:
         #    Option('--kernel', action='store_true', dest='kernel',
         #                help='Tells Flask to start an IPython Kernel.'),
-        #    Option('--use-pythonrc', action='store_true', dest='use_pythonrc',
-        #                help='Tells Flask to execute PYTHONSTARTUP file (BE CAREFULL WITH THIS!)'),
+            Option('--use-pythonrc', action='store_true', dest='use_pythonrc',
+                        help='Tells Flask to execute PYTHONSTARTUP file (BE CAREFULL WITH THIS!)'),
             Option('--print-sql', action='store_true', default=False,
                         help="Print SQL queries as they're executed"),
             Option('--dont-load', action='append', dest='dont_load', default=[],
@@ -66,6 +66,20 @@ class Shell(Command):
             Option('--vi', action='store_true', default=use_vi_mode(), dest='vi_mode',
                         help='Load Vi key bindings (for --ptpython and --ptipython)'),
         )
+
+    def setup_pythonrc(self, **options):
+        if options.get('use_pythonrc') is not True:
+            return
+        pythonrc = os.environ.get('PYTHONSTARTUP')
+        if not all([pythonrc, os.path.isfile(pythonrc)]):
+            return
+        global_ns = {}
+        with open(pythonrc) as rcfile:
+            try:
+                six.exec_(compile(rcfile.read(), pythonrc, 'exec'), global_ns)
+            except NameError:
+                print('Import pythonrc file {} failed'.format(pythonrc))
+        self.context.update(global_ns)
 
     def setup_sql_printing(self, **options):
         print_sql = options.get('print_sql')
@@ -99,6 +113,7 @@ class Shell(Command):
         :param options: defined in ``self.get_options``.
         """
         self.setup_sql_printing(**options)
+        self.setup_pythonrc(**options)
 
         vi_mode = options['vi_mode']
 
