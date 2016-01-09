@@ -49,3 +49,4 @@ Links
 
 * `GitHub <https://github.com/kxxoling/flask-shellplus>`__
 * `PyPI <https://pypi.python.org/pypi/Flask-ShellPlus>`__
+* `Documentation <https://flask-shellplus.readthedocs.org/>`__

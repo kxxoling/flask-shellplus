@@ -12,7 +12,7 @@ from flask.ext.script import Command, Option
 from .utils import import_items
 
 
-__version__ = '0.0.1'
+__version__ = '0.0.2'
 
 
 class Shell(Command):
