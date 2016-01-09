@@ -52,9 +52,6 @@ class Shell(Command):
                         help='Tells Flask to use IPython Notebook.'),
             Option('--no-browser', action='store_true', default=False, dest='no_browser',
                         help='Don\'t open the notebook in a browser after startup.'),
-        # TODOs:
-        #    Option('--kernel', action='store_true', dest='kernel',
-        #                help='Tells Flask to start an IPython Kernel.'),
             Option('--use-pythonrc', action='store_true', dest='use_pythonrc',
                         help='Tells Flask to execute PYTHONSTARTUP file (BE CAREFULL WITH THIS!)'),
             Option('--print-sql', action='store_true', default=False,
