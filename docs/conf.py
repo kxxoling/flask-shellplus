@@ -115,6 +115,18 @@ todo_include_todos = True
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 html_theme = 'alabaster'
+html_theme_options = dict(
+#    logo='logo.png',
+#    logo_name=True,
+#    logo_text_align='center',
+    description="A extension to enhance Flask shell experience.",
+    github_user='kxxoling',
+    github_repo='flask-shellplus',
+    github_banner=True,
+#    travis_button=True,
+    link='#3782BE',
+    link_hover='#3782BE',
+)
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -159,7 +171,13 @@ html_static_path = ['_static']
 #html_use_smartypants = True
 
 # Custom sidebar templates, maps document names to template names.
-#html_sidebars = {}
+html_sidebars = {
+    '**': [
+        'about.html',
+        'localtoc.html',
+        'searchbox.html',
+    ]
+}
 
 # Additional templates that should be rendered to pages, maps page names to
 # template names.
