@@ -50,3 +50,16 @@ def _import_all(module_name, quiet_load=False):
     if quiet_load is False:
         print("from %s import *" % module_name)
     return imported_objects
+
+
+def get_sa_models(db):
+    models = db.Model._decl_class_registry.values()
+    model_dict = {}
+    for model in models:
+        try:
+            model_dict[model.__name__] = model
+        except AttributeError:
+            # Some values may not have ``__name__`` attibute
+            pass
+    return model_dict
+

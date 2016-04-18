@@ -9,10 +9,10 @@ import six
 from flask import current_app
 from flask.ext.script import Command, Option
 
-from .utils import import_items
+from .utils import import_items, get_sa_models
 
 
-__version__ = '0.0.2'
+__version__ = '0.0.3'
 
 
 class Shell(Command):
@@ -101,6 +101,13 @@ class Shell(Command):
         imported_objects = import_items(import_directives, quiet_load=quiet_load)
         self.context.update(imported_objects)
 
+    def try_setuping_sa(self):
+        try:
+            self.context.update(get_sa_models(self.context['db']))
+        except (KeyError, AttributeError):
+            # This may caused when it's not a SQLAlchemy project
+            pass
+
     def run(self, **options):
         """
         Runs the shell.  If no_bpython is False or use_bpython is True, then
@@ -111,6 +118,7 @@ class Shell(Command):
         """
         self.setup_sql_printing(**options)
         self.setup_pythonrc(**options)
+        self.try_setuping_sa()
 
         vi_mode = options['vi_mode']
 
